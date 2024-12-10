@@ -71,6 +71,17 @@ def validate_anndata(input_data):
     if "object_type" not in adata.obs.columns:
         error_messages.append("`.obs` must contain a column named 'object_type' containing the observation type ontology ID (cell/nucleus).")
 
+        # Check for Protocol DOI in `.uns['protocol']`
+    if 'protocol' not in adata.uns or not adata.uns['protocol']:
+        error_messages.append("`.uns` must contain a 'protocol' key with a valid Protocol DOI.")
+    
+    # Recommended: Annotation storage in .obsm['annotation']
+    if 'annotation' not in adata.obsm:
+        warnings.warn("It is recommended to use `.obsm['annotation']` for general annotation storage.", UserWarning)
+    elif 'annotation' in adata.obsm:
+        if 'annotation_methods' not in adata.uns:
+            error_messages.append("`.obsm['annotation']` exists, but `.uns['annotation_methods']` is missing.")
+    
     # Check sparsity for all matrices
     check_sparsity(adata.X, ".X")
 
