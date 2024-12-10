@@ -50,72 +50,70 @@ def validate_anndata(input_data):
     else:
         adata = anndata.read_h5ad(input_data)
 
-    # Track accessed columns and keys
+    # Track accessed columns and keys dynamically
     accessed_obs_columns = set()
     accessed_obsm_keys = set()
+    accessed_uns_keys = set()
 
     # REQUIRED: Check for duplicate values in the index
     print("The values in AnnData.obs.index will be used as the cells' barcodes. They look like:")
     print(adata.obs.head().index)
     check_duplicate_objects(adata.obs, error_messages)
     
-    # Accessed columns
-    accessed_obs_columns.add("original_obs_id")
-    accessed_obs_columns.add("object_type")
+    # Validate `.obs` fields
+    if "original_obs_id" in adata.obs.columns:
+        accessed_obs_columns.add("original_obs_id")
+    else:
+        error_messages.append("`.obs` must contain a column named 'original_obs_id' containing the original barcode or unique identifier.")
 
-    # There must be a column with the original barcodes, even if it is the same as the index
-    if "original_obs_id" not in adata.obs.columns:
-        error_messages.append("`.obs` must contain a column named 'original_obs_id' containing the original barcode or unique identifier, even if no appending/transformation necessary.")
-    
-    # There must be a column in .obs with the observation type ontology ID called 'object_type'
-    if "object_type" not in adata.obs.columns:
+    if "object_type" in adata.obs.columns:
+        accessed_obs_columns.add("object_type")
+    else:
         error_messages.append("`.obs` must contain a column named 'object_type' containing the observation type ontology ID (cell/nucleus).")
 
-        # Check for Protocol DOI in `.uns['protocol']`
-    if 'protocol' not in adata.uns or not adata.uns['protocol']:
-        error_messages.append("`.uns` must contain a 'protocol' key with a valid Protocol DOI.")
+    # Validate `.uns` for protocol DOI
+    if "protocol" in adata.uns and adata.uns["protocol"]:
+        accessed_uns_keys.add("protocol")
+    else:
+        error_messages.append("`.uns` must contain a key 'protocol' with a valid Protocol DOI.")
     
-    # Recommended: Annotation storage in .obsm['annotation']
-    if 'annotation' not in adata.obsm:
-        warnings.warn("It is recommended to use `.obsm['annotation']` for general annotation storage.", UserWarning)
-    elif 'annotation' in adata.obsm:
-        if 'annotation_methods' not in adata.uns:
+    # Recommended: Annotation storage in `.obsm['annotation']`
+    if "annotation" in adata.obsm:
+        accessed_obsm_keys.add("annotation")
+        if "annotation_methods" not in adata.uns:
             error_messages.append("`.obsm['annotation']` exists, but `.uns['annotation_methods']` is missing.")
-    
+        accessed_uns_keys.add("annotation_methods")
+    else:
+        warnings.warn("It is recommended to use `.obsm['annotation']` for general annotation storage.", UserWarning)
+
     # Check sparsity for all matrices
     check_sparsity(adata.X, ".X")
 
-    if hasattr(adata, 'layers') and adata.layers:
-        for key in adata.layers:
-            check_sparsity(adata.layers[key], f".layers['{key}']")
-    
-    if hasattr(adata, 'obsm') and adata.obsm:
-        for key in adata.obsm:
-            if key in ['X_spatial', 'X_embedding']:  # Add keys accessed during validation
-                accessed_obsm_keys.add(key)
-            check_sparsity(adata.obsm[key], f".obsm['{key}']")
-    
-    if hasattr(adata, 'obsp') and adata.obsp:
-        for key in adata.obsp:
-            check_sparsity(adata.obsp[key], f".obsp['{key}']")
-    
-    if hasattr(adata, 'varm') and adata.varm:
-        for key in adata.varm:
-            check_sparsity(adata.varm[key], f".varm['{key}']")
-    
-    if hasattr(adata, 'varp') and adata.varp:
-        for key in adata.varp:
-            check_sparsity(adata.varp[key], f".varp['{key}']")
+    for layer, key_set in [
+        (adata.layers, set()),
+        (adata.obsm, accessed_obsm_keys),
+        (adata.obsp, set()),
+        (adata.varm, set()),
+        (adata.varp, set()),
+    ]:
+        if hasattr(layer, "keys"):
+            for key in layer.keys():
+                key_set.add(key)
+                check_sparsity(layer[key], f"{layer}[{key}]")
 
-    # Print all unused .obs columns and .obsm keys
+    # Print all unused `.obs` columns and `.obsm` keys
     unused_obs_columns = [col for col in adata.obs.columns if col not in accessed_obs_columns]
     unused_obsm_keys = [key for key in adata.obsm.keys() if key not in accessed_obsm_keys]
+    unused_uns_keys = [key for key in adata.uns.keys() if key not in accessed_uns_keys]
+
     if unused_obs_columns:
         print(f"Unused .obs columns: {', '.join(unused_obs_columns)}")
     if unused_obsm_keys:
         print(f"Unused .obsm keys: {', '.join(unused_obsm_keys)}")
+    if unused_uns_keys:
+        print(f"Unused .uns keys: {', '.join(unused_uns_keys)}")
 
-    # If there are any error messages, raise an exception with all of them
+    # Raise an error if validation fails
     if error_messages:
         formatted_errors = "\n- ".join(error_messages)
         raise ValueError(f"Validation failed with the following issues:\n- {formatted_errors}")
