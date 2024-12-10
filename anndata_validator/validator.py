@@ -100,6 +100,26 @@ def validate_anndata(input_data):
             for key in layer.keys():
                 key_set.add(key)
                 check_sparsity(layer[key], f"{layer}[{key}]")
+    
+    print("If this is spatial data, coordinates should go in .obsm['X_spatial']")
+    if 'X_spatial' in adata.obsm:
+        accessed_obsm_keys.add('X_spatial')
+
+    # Check for embedding coordinates
+    if 'X_embedding' not in adata.obsm:
+        warnings.warn("The `.obsm` does not contain an entry called 'X_embedding'. Any coordinates for display in Vitessce should go here.", UserWarning)
+        missing_keys = []
+        if 'X_umap' in adata.obsm:
+            missing_keys.append('X_umap')
+        if 'X_tsne' in adata.obsm:
+            missing_keys.append('X_tsne')
+        if 'X_harmony' in adata.obsm:
+            missing_keys.append('X_harmony')
+        
+        if missing_keys:
+            warnings.warn(f"Found the following embeddings but not 'X_embedding': {', '.join(missing_keys)}. Consider copying these matrices to .obsm['X_embedding'].", UserWarning)
+    else:
+        accessed_obsm_keys.add('X_embedding')
 
     # Print all unused `.obs` columns and `.obsm` keys
     unused_obs_columns = [col for col in adata.obs.columns if col not in accessed_obs_columns]
@@ -107,11 +127,11 @@ def validate_anndata(input_data):
     unused_uns_keys = [key for key in adata.uns.keys() if key not in accessed_uns_keys]
 
     if unused_obs_columns:
-        print(f"Unused .obs columns: {', '.join(unused_obs_columns)}")
+        warnings.warn(f"Unused .obs columns: {', '.join(unused_obs_columns)}", UserWarning)
     if unused_obsm_keys:
-        print(f"Unused .obsm keys: {', '.join(unused_obsm_keys)}")
+        warnings.warn(f"Unused .obsm keys: {', '.join(unused_obsm_keys)}", UserWarning)
     if unused_uns_keys:
-        print(f"Unused .uns keys: {', '.join(unused_uns_keys)}")
+        warnings.warn(f"Unused .uns keys: {', '.join(unused_uns_keys)}", UserWarning)
 
     # Raise an error if validation fails
     if error_messages:
