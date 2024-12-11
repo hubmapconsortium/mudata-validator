@@ -1,2 +1,3 @@
 __pycache__/
 .pytest_cache/
+hubmap_anndata_validator.egg-info/

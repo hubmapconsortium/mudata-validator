@@ -1,0 +1,21 @@
+[project]
+name = "hubmap-anndata-validator"
+version = "0.1.0"
+description = "A tool for validating AnnData objects for HuBMAP EPICs."
+readme = "README.md"
+authors = [{name = "Penny Cuda", email = "pcuda@andrew.cmu.edu"}]
+dependencies = ["anndata"]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+license = {text = "GNU General Public License v3 (GPLv3)"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
