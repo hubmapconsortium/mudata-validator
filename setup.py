@@ -6,7 +6,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="hubmap-anndata-validator",
-    version="0.1.0",
+    version="1.0.0",
     description="A package to validate AnnData objects for HuBMAP EPICs.",
     long_description=long_description,
     long_description_content_type="text/markdown",
