@@ -6,7 +6,7 @@ A Python package to validate AnnData objects based on specific criteria for HuBM
 
 Install the package:
 ```bash
-pip install git+https://github.com/hubmapconsortium/anndata-validator.git
+pip install hubmap-anndata-validator==0.1.0
 ```
 
 Use the package:
