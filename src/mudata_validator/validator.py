@@ -41,6 +41,7 @@ def validate_modality(adata, modality_name, error_messages):
     accessed_uns_keys = set()
 
     # REQUIRED: Check for duplicate values in the index
+    # Change to obs_names?
     print("The values in AnnData.obs.index will be used as the objects' unique identifiers. They look like:")
     print(adata.obs.head().index)
     check_duplicate_objects(adata.obs, error_messages, modality_name)
@@ -55,18 +56,30 @@ def validate_modality(adata, modality_name, error_messages):
 
     if "object_type" in adata.obs.columns:
         accessed_obs_columns.add("object_type")
+        allowed_obj_types = ["cell", "nucleus", "ftu", "spot"]
+        invalid_values = set(adata.obs["object_type"].unique()) - set(allowed_obj_types)
+        if invalid_values:
+            error_messages.append(
+                f"'{modality_name}.obs['object_type']' contains invalid values: {', '.join(invalid_values)}. "
+                f"Allowed values are: {', '.join(allowed_obj_types)}."
+            )
     else:
         error_messages.append(
-            f"`{modality_name}.obs` must contain a column named 'object_type' containing the observation type ontology ID (cell/nucleus)."
+            f"`{modality_name}.obs` must contain a column named 'object_type' containing the observation type ontology ID (cell, nucleus, ftu, spot)."
         )
 
+    # !!TODO!! Check var values
+
     # Validate `.uns` for protocol DOI
-    if "protocol" in adata.uns and adata.uns["protocol"]:
+    if "protocol" in adata.uns_keys() and adata.uns["protocol"]:
         accessed_uns_keys.add("protocol")
     else:
         error_messages.append(
             f"`{modality_name}.uns` must contain a key 'protocol' with a valid Protocol DOI."
         )
+
+    #!!TODO!! if "analyte_class" in adata.uns_keys():
+        #need to make sure it's a valid analyte class
 
     # Recommended: Annotation storage in `.obsm['annotation']`
     if "annotation" in adata.obsm:
@@ -103,19 +116,23 @@ def validate_modality(adata, modality_name, error_messages):
 
     # Check for embedding coordinates
     if 'X_embedding' not in adata.obsm:
-        warnings.warn("The `.obsm` does not contain an entry called 'X_embedding'. Any coordinates for display in Vitessce should go here.", UserWarning)
-        missing_keys = []
+        warnings.warn("The `.obsm` does not contain an entry called 'X_embedding'. Default coordinates for display in Vitessce should go here.", UserWarning)
+        plot_keys = []
         if 'X_umap' in adata.obsm:
-            missing_keys.append('X_umap')
+            plot_keys.append('X_umap')
         if 'X_tsne' in adata.obsm:
-            missing_keys.append('X_tsne')
+            plot_keys.append('X_tsne')
         if 'X_harmony' in adata.obsm:
-            missing_keys.append('X_harmony')
+            plot_keys.append('X_harmony')
+        if 'X_pca' in adata.obsm:
+            plot_keys.append('X_pca')
         
-        if missing_keys:
-            warnings.warn(f"Found the following embeddings but not 'X_embedding': {', '.join(missing_keys)}. Consider copying these matrices to .obsm['X_embedding'].", UserWarning)
+        if plot_keys:
+            warnings.warn(f"Found the following embeddings but not 'X_embedding': {', '.join(plot_keys)}. Consider copying these matrices to .obsm['X_embedding'].", UserWarning)
     else:
-        accessed_obsm_keys.add('X_embedding')    
+        accessed_obsm_keys.add('X_embedding')
+
+    # !!TODO!! Clusters and cluster definitions     ?
 
     # Print all unused `.obs` columns and `.obsm` keys
     unused_obs_columns = [col for col in adata.obs_keys() if col not in accessed_obs_columns]
@@ -154,19 +171,16 @@ def validate_mudata(input_data):
 
     # Validate overall MuData object
     print("Validating overall MuData object...")
+    # ##!!TODO!! .mod names need to be valid analyte classes?
 
-    if len(mdata.mod) == 0:
-        error_messages.append("MuData object does not contain any modalities.")
+    if "class_types" not in mdata.uns_keys():
+        error_messages.append(f"MuData.uns must contain a key called 'class_types' with a valid object type: cell, nucleus, ftu, spot.")
+    else:
+        allowed_class_types = ['cell', 'nucleus', 'ftu', 'spot']
+        if mdata.uns['class_types'] not in allowed_class_types:
+            error_messages.append(f"MuData.uns['class_types'] must contain one of these valid class types: cell, nucleus, ftu, spot.")
 
-    if "original_obs_id" not in mdata.obs.columns:
-        error_messages.append("MuData.obs must contain 'original_obs_id' column.")
 
-    if "object_type" not in mdata.obs.columns:
-        error_messages.append("MuData.obs must contain 'object_type' column.")
-
-    # Check for duplicate object IDs in the overall MuData.obs
-    check_duplicate_objects(mdata.obs, error_messages, modality_name="MuData.obs")
-    
     for modality_name, adata in mdata.mod.items():
         validate_modality(adata, modality_name, error_messages)
 
