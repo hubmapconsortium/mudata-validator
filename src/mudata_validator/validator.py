@@ -1,12 +1,15 @@
-import muon as mu
 import os
-import pandas as pd
-import scipy.sparse
-import numpy as np
 import warnings
 
+import muon as mu
+import numpy as np
+import pandas as pd
+import scipy.sparse
 
-def check_duplicate_objects(data: pd.DataFrame, error_messages: list, modality_name: str = None):
+
+def check_duplicate_objects(
+    data: pd.DataFrame, error_messages: list, modality_name: str = None
+):
     """Check for duplicate object IDs in the data."""
     if len(set(data.index)) == data.shape[0]:
         return
@@ -25,7 +28,7 @@ def check_duplicate_objects(data: pd.DataFrame, error_messages: list, modality_n
 def check_sparsity(matrix, matrix_name: str):
     """Check the sparsity of a matrix and warn if it's too dense."""
     if isinstance(matrix, np.ndarray):
-        sparsity = (scipy.sparse.csr_matrix(matrix).nnz / np.prod(matrix.shape))
+        sparsity = scipy.sparse.csr_matrix(matrix).nnz / np.prod(matrix.shape)
         if sparsity > 0.3:
             warnings.warn(
                 f"{matrix_name} is a dense matrix with sparsity {sparsity:.4f}. It is recommended to store this as a sparse matrix.",
@@ -39,7 +42,9 @@ def validate_modality(adata, modality_name, error_messages):
 
     # REQUIRED: Check for duplicate values in the index
     # Change to obs_names?
-    print("The values in AnnData.obs.index will be used as the objects' unique identifiers. They look like:")
+    print(
+        "The values in AnnData.obs.index will be used as the objects' unique identifiers. They look like:"
+    )
     print(adata.obs.head().index)
     check_duplicate_objects(adata.obs, error_messages, modality_name)
 
@@ -63,18 +68,42 @@ def validate_modality(adata, modality_name, error_messages):
         )
 
     # !!TODO!! Check var values
-    print("The HUGO symbol should be included as an annotation for genes and the Uniprot ID should be included as an annotation for proteins.")
+    print(
+        "The HUGO symbol should be included as an annotation for genes and the Uniprot ID should be included as an annotation for proteins."
+    )
 
     # Validate `.uns` for protocol DOI
-    if "protocol" not in adata.uns_keys() or adata.uns["protocol"]==None:
+    if "protocol" not in adata.uns_keys() or adata.uns["protocol"] == None:
         error_messages.append(
             f"`{modality_name}.uns` must contain a key 'protocol' with a valid Protocol DOI."
         )
-    valid_analyte_classes = ['DNA', 'RNA', 'Endogenous fluorophore', 'Lipid', 'Metabolite', 'Polysaccharide', 'Protein', 'Nucleic acid + protein', 'N-glycan', 'DNA + RNA', 'Chromatin', 'Collagen', 'Fluorochrome', 'Lipid + metabolite', 'Peptide', 'Saturated lipid', 'Unsaturated lipid']
+    valid_analyte_classes = [
+        "DNA",
+        "RNA",
+        "Endogenous fluorophore",
+        "Lipid",
+        "Metabolite",
+        "Polysaccharide",
+        "Protein",
+        "Nucleic acid + protein",
+        "N-glycan",
+        "DNA + RNA",
+        "Chromatin",
+        "Collagen",
+        "Fluorochrome",
+        "Lipid + metabolite",
+        "Peptide",
+        "Saturated lipid",
+        "Unsaturated lipid",
+    ]
     if "analyte_class" not in adata.uns_keys():
-        error_messages.append(".uns must contain a key called 'analyte_class' that references a known analyte class defined in 'valid_analyte_classes.txt'.")
-    elif adata.uns.get('analyte_class') not in valid_analyte_classes:
-            error_messages.append("The value in .uns['analyte_class'] must reference a known analyte class defined in 'valid_analyte_classes.txt'.")
+        error_messages.append(
+            ".uns must contain a key called 'analyte_class' that references a known analyte class defined in 'valid_analyte_classes.txt'."
+        )
+    elif adata.uns.get("analyte_class") not in valid_analyte_classes:
+        error_messages.append(
+            "The value in .uns['analyte_class'] must reference a known analyte class defined in 'valid_analyte_classes.txt'."
+        )
 
     # Check sparsity for all matrices
 
@@ -89,8 +118,10 @@ def validate_modality(adata, modality_name, error_messages):
             for key in layer.keys():
                 key_set.add(key)
                 check_sparsity(layer[key], f"{modality_name}[{key}]")
-    
-    print("Standard plots are expected to be stored in .obsm['X_umap'], .obsm['X_harmony'], .obsm['X_tsne'] and .obsm['X_pca']")
+
+    print(
+        "Standard plots are expected to be stored in .obsm['X_umap'], .obsm['X_harmony'], .obsm['X_tsne'] and .obsm['X_pca']"
+    )
     print("If this is spatial data, coordinates should go in .obsm['X_spatial']")
 
     # !!TODO!! Clusters and cluster definitions     ?
@@ -137,21 +168,23 @@ def validate_mudata(input_data):
 
     print("Validating overall MuData object...")
 
-    if mdata.uns.get('epic_type') == {'annotations'}:
+    if mdata.uns.get("epic_type") == {"annotations"}:
         for modality_name, adata in mdata.mod.items():
             validate_annotations(adata, modality_name, error_messages)
             validate_modality(adata, modality_name, error_messages)
-    elif mdata.uns.get('epic_type') == {'analyses'}:
+    elif mdata.uns.get("epic_type") == {"analyses"}:
         for modality_name, adata in mdata.mod.items():
             validate_analyses(adata, modality_name, error_messages)
             validate_modality(adata, modality_name, error_messages)
-    elif mdata.uns.get('epic_type') == {'annotations', 'analyses'}:
+    elif mdata.uns.get("epic_type") == {"annotations", "analyses"}:
         for modality_name, adata in mdata.mod.items():
             validate_analyses(adata, modality_name, error_messages)
             validate_annotations(adata, modality_name, error_messages)
             validate_modality(adata, modality_name, error_messages)
     else:
-        error_messages.append("MuData.uns must contain a key called 'epic_type' with at least one valid epic type: annotations, analyses")
+        error_messages.append(
+            "MuData.uns must contain a key called 'epic_type' with at least one valid epic type: annotations, analyses"
+        )
 
     # Raise an error if validation fails
     if error_messages:
