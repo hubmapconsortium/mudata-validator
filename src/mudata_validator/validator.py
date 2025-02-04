@@ -55,7 +55,7 @@ def validate_modality(adata, modality_name, error_messages):
         )
 
     if "object_type" in adata.obs.columns:
-        allowed_obj_types = ["cell", "nucleus", "ftu", "spot"]
+        allowed_obj_types = ["cell", "nuclei", "ftu", "spot"]
         invalid_values = set(adata.obs["object_type"].unique()) - set(allowed_obj_types)
         if invalid_values:
             error_messages.append(
@@ -64,7 +64,7 @@ def validate_modality(adata, modality_name, error_messages):
             )
     else:
         error_messages.append(
-            f"`{modality_name}.obs` must contain a column named 'object_type' containing the observation type ontology ID (cell, nucleus, ftu, spot)."
+            f"`{modality_name}.obs` must contain a column named 'object_type' containing the observation type ontology ID (cell, nuclei, ftu, spot)."
         )
 
     # !!TODO!! Check var values
