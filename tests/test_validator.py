@@ -16,6 +16,7 @@ def create_mudata():
     X1 = sp.random(3, 3, density=0.1, format="csr")
     adata1 = anndata.AnnData(X=X1, obs=obs1, var=var1)
     adata1.uns['protocol'] = "DOI:whatever/protocol"
+    adata1.uns['analyte_class'] = 'RNA'
 
     # Modality 2
     obs2 = pd.DataFrame({"original_obs_id": ["X", "Y", "Z"], "object_type": ["cell", "cell", "cell"]}, index=["X", "Y", "Z"])
@@ -23,10 +24,12 @@ def create_mudata():
     X2 = sp.random(3, 3, density=0.1, format="csr")
     adata2 = anndata.AnnData(X=X2, obs=obs2, var=var2)
     adata2.uns['protocol'] = "DOI:whatever/protocol"
+    adata2.uns['analyte_class'] = 'RNA'
 
     # Combine into MuData
     mdata = mu.MuData({"modality1": adata1, "modality2": adata2})
     mdata.uns["class_types"] = "cell"
+    mdata.uns["epic_type"] = {'analyses', 'annotations'}
     return mdata
 
 
@@ -75,23 +78,6 @@ def test_validate_mudata_warn_on_dense_matrix(create_mudata):
         validate_mudata(mdata)
 
 
-def test_validate_mudata_unused_columns_warn(create_mudata):
-    """Test that unused columns in .obs or .obsm in a modality issue warnings."""
-    mdata = create_mudata
-    mdata.mod["modality1"].obs["unused_column"] = [1, 2, 3]
-    mdata.mod["modality1"].obsm["X_unused"] = np.zeros((3, 2))
-    mdata.mod["modality1"].uns["unused"] = "unused"
-
-    with pytest.warns(UserWarning, match=r"Unused .obs columns: unused_column"):
-        validate_mudata(mdata)
-
-    with pytest.warns(UserWarning, match=r"Unused .obsm keys: X_unused"):
-        validate_mudata(mdata)
-
-    with pytest.warns(UserWarning, match=r"Unused .uns keys: unused"):
-        validate_mudata(mdata)
-
-
 def test_validate_mudata_X_spatial(create_mudata):
     """Test that a valid modality with X_spatial passes validation."""
     mdata = create_mudata
@@ -103,17 +89,15 @@ def test_validate_mudata_X_spatial(create_mudata):
         pytest.fail(f"Unexpected ValueError: {e}")
 
 
-def test_validate_mudata_embedding_warning(create_mudata):
-    """Test that missing X_embedding issues a warning if other embeddings are present."""
-    mdata = create_mudata
-    mdata.mod["modality1"].obsm["X_umap"] = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])
-
-    with pytest.warns(UserWarning, match=r"Found the following embeddings but not 'X_embedding'"):
-        validate_mudata(mdata)
-
 def test_validate_mudata_obj_types(create_mudata):
     mdata = create_mudata
     mdata.mod["modality1"].obs["object_type"] = "invalid_value"
     with pytest.raises(ValueError, match=r"'modality1.obs\['object_type'\]' contains invalid values: invalid_value. Allowed values are: cell, nucleus, ftu, spot."):
             validate_mudata(mdata)
+            
 
+def test_validate_mudata_epic_types(create_mudata):
+    mdata = create_mudata
+    del mdata.uns['epic_type']
+    with pytest.raises(ValueError, match=r"MuData.uns must contain a key called 'epic_type' with at least one valid epic type: annotations, analyses"):
+        validate_mudata(mdata)

@@ -36,9 +36,6 @@ def check_sparsity(matrix, matrix_name: str):
 def validate_modality(adata, modality_name, error_messages):
     """Validate a single modality (AnnData object)."""
     print(f"Validating modality: {modality_name}")
-    accessed_obs_columns = set()
-    accessed_obsm_keys = set()
-    accessed_uns_keys = set()
 
     # REQUIRED: Check for duplicate values in the index
     # Change to obs_names?
@@ -47,15 +44,12 @@ def validate_modality(adata, modality_name, error_messages):
     check_duplicate_objects(adata.obs, error_messages, modality_name)
 
     # Validate `.obs` fields
-    if "original_obs_id" in adata.obs.columns:
-        accessed_obs_columns.add("original_obs_id")
-    else:
+    if "original_obs_id" not in adata.obs.columns:
         error_messages.append(
             f"`{modality_name}.obs` must contain a column named 'original_obs_id' containing the original barcode or unique identifier."
         )
 
     if "object_type" in adata.obs.columns:
-        accessed_obs_columns.add("object_type")
         allowed_obj_types = ["cell", "nucleus", "ftu", "spot"]
         invalid_values = set(adata.obs["object_type"].unique()) - set(allowed_obj_types)
         if invalid_values:
@@ -69,34 +63,20 @@ def validate_modality(adata, modality_name, error_messages):
         )
 
     # !!TODO!! Check var values
+    print("The HUGO symbol should be included as an annotation for genes and the Uniprot ID should be included as an annotation for proteins.")
 
     # Validate `.uns` for protocol DOI
-    if "protocol" in adata.uns_keys() and adata.uns["protocol"]:
-        accessed_uns_keys.add("protocol")
-    else:
+    if "protocol" not in adata.uns_keys() or adata.uns["protocol"]==None:
         error_messages.append(
             f"`{modality_name}.uns` must contain a key 'protocol' with a valid Protocol DOI."
         )
-
-    #!!TODO!! if "analyte_class" in adata.uns_keys():
-        #need to make sure it's a valid analyte class
-
-    # Recommended: Annotation storage in `.obsm['annotation']`
-    if "annotation" in adata.obsm:
-        accessed_obsm_keys.add("annotation")
-        if "annotation_methods" not in adata.uns:
-            error_messages.append(
-                f"`{modality_name}.obsm['annotation']` exists, but `{modality_name}.uns['annotation_methods']` is missing."
-            )
-        accessed_uns_keys.add("annotation_methods")
-    else:
-        warnings.warn(
-            f"It is recommended to use `{modality_name}.obsm['annotation']` for general annotation storage.",
-            UserWarning,
-        )
+    valid_analyte_classes = ['DNA', 'RNA', 'Endogenous fluorophore', 'Lipid', 'Metabolite', 'Polysaccharide', 'Protein', 'Nucleic acid + protein', 'N-glycan', 'DNA + RNA', 'Chromatin', 'Collagen', 'Fluorochrome', 'Lipid + metabolite', 'Peptide', 'Saturated lipid', 'Unsaturated lipid']
+    if "analyte_class" not in adata.uns_keys():
+        error_messages.append(".uns must contain a key called 'analyte_class' that references a known analyte class defined in 'valid_analyte_classes.txt'.")
+    elif adata.uns.get('analyte_class') not in valid_analyte_classes:
+            error_messages.append("The value in .uns['analyte_class'] must reference a known analyte class defined in 'valid_analyte_classes.txt'.")
 
     # Check sparsity for all matrices
-    check_sparsity(adata.X, f"{modality_name}.X")
 
     for layer, key_set in [
         (adata.layers, set()),
@@ -109,42 +89,28 @@ def validate_modality(adata, modality_name, error_messages):
             for key in layer.keys():
                 key_set.add(key)
                 check_sparsity(layer[key], f"{modality_name}[{key}]")
-
+    
+    print("Standard plots are expected to be stored in .obsm['X_umap'], .obsm['X_harmony'], .obsm['X_tsne'] and .obsm['X_pca']")
     print("If this is spatial data, coordinates should go in .obsm['X_spatial']")
-    if 'X_spatial' in adata.obsm:
-        accessed_obsm_keys.add('X_spatial')
-
-    # Check for embedding coordinates
-    if 'X_embedding' not in adata.obsm:
-        warnings.warn("The `.obsm` does not contain an entry called 'X_embedding'. Default coordinates for display in Vitessce should go here.", UserWarning)
-        plot_keys = []
-        if 'X_umap' in adata.obsm:
-            plot_keys.append('X_umap')
-        if 'X_tsne' in adata.obsm:
-            plot_keys.append('X_tsne')
-        if 'X_harmony' in adata.obsm:
-            plot_keys.append('X_harmony')
-        if 'X_pca' in adata.obsm:
-            plot_keys.append('X_pca')
-        
-        if plot_keys:
-            warnings.warn(f"Found the following embeddings but not 'X_embedding': {', '.join(plot_keys)}. Consider copying these matrices to .obsm['X_embedding'].", UserWarning)
-    else:
-        accessed_obsm_keys.add('X_embedding')
 
     # !!TODO!! Clusters and cluster definitions     ?
 
-    # Print all unused `.obs` columns and `.obsm` keys
-    unused_obs_columns = [col for col in adata.obs_keys() if col not in accessed_obs_columns]
-    unused_obsm_keys = [key for key in adata.obsm_keys() if key not in accessed_obsm_keys]
-    unused_uns_keys = [key for key in adata.uns_keys() if key not in accessed_uns_keys]
 
-    if unused_obs_columns:
-        warnings.warn(f"Unused .obs columns: {', '.join(unused_obs_columns)}", UserWarning)
-    if unused_obsm_keys:
-        warnings.warn(f"Unused .obsm keys: {', '.join(unused_obsm_keys)}", UserWarning)
-    if unused_uns_keys:
-        warnings.warn(f"Unused .uns keys: {', '.join(unused_uns_keys)}", UserWarning)
+def validate_annotations(adata, modality_name, error_messages):
+    if "annotation" in adata.obsm:
+        if "annotation_methods" not in adata.uns:
+            error_messages.append(
+                f"`{modality_name}.obsm['annotation']` exists, but `{modality_name}.uns['annotation_methods']` is missing."
+            )
+    else:
+        warnings.warn(
+            f"It is recommended to use `{modality_name}.obsm['annotation']` for general annotation storage.",
+            UserWarning,
+        )
+
+
+def validate_analyses(adata, modality_name, error_messages):
+    check_sparsity(adata.X, f"{modality_name}.X")
 
 
 def validate_mudata(input_data):
@@ -169,20 +135,23 @@ def validate_mudata(input_data):
     else:
         mdata = mu.read_h5mu(input_data)
 
-    # Validate overall MuData object
     print("Validating overall MuData object...")
-    # ##!!TODO!! .mod names need to be valid analyte classes?
 
-    if "class_types" not in mdata.uns_keys():
-        error_messages.append(f"MuData.uns must contain a key called 'class_types' with a valid object type: cell, nucleus, ftu, spot.")
+    if mdata.uns.get('epic_type') == {'annotations'}:
+        for modality_name, adata in mdata.mod.items():
+            validate_annotations(adata, modality_name, error_messages)
+            validate_modality(adata, modality_name, error_messages)
+    elif mdata.uns.get('epic_type') == {'analyses'}:
+        for modality_name, adata in mdata.mod.items():
+            validate_analyses(adata, modality_name, error_messages)
+            validate_modality(adata, modality_name, error_messages)
+    elif mdata.uns.get('epic_type') == {'annotations', 'analyses'}:
+        for modality_name, adata in mdata.mod.items():
+            validate_analyses(adata, modality_name, error_messages)
+            validate_annotations(adata, modality_name, error_messages)
+            validate_modality(adata, modality_name, error_messages)
     else:
-        allowed_class_types = ['cell', 'nucleus', 'ftu', 'spot']
-        if mdata.uns['class_types'] not in allowed_class_types:
-            error_messages.append(f"MuData.uns['class_types'] must contain one of these valid class types: cell, nucleus, ftu, spot.")
-
-
-    for modality_name, adata in mdata.mod.items():
-        validate_modality(adata, modality_name, error_messages)
+        error_messages.append("MuData.uns must contain a key called 'epic_type' with at least one valid epic type: annotations, analyses")
 
     # Raise an error if validation fails
     if error_messages:

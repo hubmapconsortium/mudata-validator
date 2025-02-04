@@ -1,18 +1,22 @@
-# AnnData Validator
+# MuData Validator
 
-A Python package to validate AnnData objects based on specific criteria for HuBMAP.
+A Python package to validate mudata objects based on specific criteria for HuBMAP.
+
+## Requirements
+
+
 
 ## Installation
 
 Install the package:
 ```bash
-pip install hubmap-anndata-validator==1.0.0
+pip install hubmap-mudata-validator==1.0.1
 ```
 
 Use the package:
 ```python
-from anndata_validator import validate_anndata
-validate_anndata(anndata_object)
+from mudata_validator import validate_mudata
+validate_mudata(mudata_object)
 # OR
-validate_anndata(path_to_h5ad)
+validate_mudata(path_to_h5mu)
 ```
