@@ -125,3 +125,13 @@ def test_validate_mudata_epic_types(create_mudata):
         match=r"MuData.uns must contain a key called 'epic_type' with at least one valid epic type: annotations, analyses",
     ):
         validate_mudata(mdata)
+
+
+def test_validate_mudata_analyte_class(create_mudata):
+    mdata = create_mudata
+    mdata.mod["modality1"].uns["analyte_class"] = "invalid"
+    with pytest.raises(
+        ValueError,
+        match=r"The value in .uns\['analyte_class'\] must reference a known analyte class defined in 'valid_analyte_classes.txt'.",
+    ):
+        validate_mudata(mdata)
