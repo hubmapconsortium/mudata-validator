@@ -72,7 +72,6 @@ def validate_modality(adata, modality_name, error_messages):
         "The HUGO symbol should be included as an annotation for genes and the Uniprot ID should be included as an annotation for proteins."
     )
 
-    # Validate `.uns` for protocol DOI
     if "protocol" not in adata.uns_keys() or adata.uns["protocol"] == None:
         error_messages.append(
             f"`{modality_name}.uns` must contain a key 'protocol' with a valid Protocol DOI."
@@ -123,8 +122,6 @@ def validate_modality(adata, modality_name, error_messages):
         "Standard plots are expected to be stored in .obsm['X_umap'], .obsm['X_harmony'], .obsm['X_tsne'] and .obsm['X_pca']"
     )
     print("If this is spatial data, coordinates should go in .obsm['X_spatial']")
-
-    # !!TODO!! Clusters and cluster definitions     ?
 
 
 def validate_annotations(adata, modality_name, error_messages):
