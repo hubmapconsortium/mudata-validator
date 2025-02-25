@@ -112,7 +112,7 @@ def test_validate_mudata_obj_types(create_mudata):
     mdata.mod["modality1"].obs["object_type"] = "invalid_value"
     with pytest.raises(
         ValueError,
-        match=r"'modality1.obs\['object_type'\]' contains invalid values: invalid_value. Allowed values are: cell, nucleus, ftu, spot.",
+        match=r"'modality1.obs\['object_type'\]' contains invalid values: invalid_value. Allowed values are: cell, nuclei, ftu, spot.",
     ):
         validate_mudata(mdata)
 

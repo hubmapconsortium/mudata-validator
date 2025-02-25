@@ -67,7 +67,7 @@ def validate_modality(adata, modality_name, error_messages):
             f"`{modality_name}.obs` must contain a column named 'object_type' containing the observation type ontology ID (cell, nuclei, ftu, spot)."
         )
 
-    # !!TODO!! Check var values
+    # !!TODO!! Check var values?
     print(
         "The HUGO symbol should be included as an annotation for genes and the Uniprot ID should be included as an annotation for proteins."
     )
@@ -76,25 +76,32 @@ def validate_modality(adata, modality_name, error_messages):
         error_messages.append(
             f"`{modality_name}.uns` must contain a key 'protocol' with a valid Protocol DOI."
         )
-    valid_analyte_classes = [
-        "DNA",
-        "RNA",
-        "Endogenous fluorophore",
-        "Lipid",
-        "Metabolite",
-        "Polysaccharide",
-        "Protein",
-        "Nucleic acid + protein",
-        "N-glycan",
-        "DNA + RNA",
-        "Chromatin",
-        "Collagen",
-        "Fluorochrome",
-        "Lipid + metabolite",
-        "Peptide",
-        "Saturated lipid",
-        "Unsaturated lipid",
-    ]
+
+# Check analyte class
+    try:
+
+        common_assay_fields = pd.read_csv("https://docs.google.com/spreadsheets/d/1oKBb0Elie4wNzjvqqQEVpH7I4-8phKyPn2oyvG3rNv4/export?gid=0&format=csv", header=1)
+        valid_analyte_classes = common_assay_fields["analyte class"].dropna().to_list()
+    except Exception as e:
+        print(f"Error fetching Common Assay Fields data: {e}. Falling back to stored analyte classes.")
+        valid_analyte_classes = ['DNA',
+                                 'RNA',
+                                 'Endogenous fluorophore',
+                                 'Lipid',
+                                 'Metabolite',
+                                 'Polysaccharide',
+                                 'Protein',
+                                 'Nucleic acid + protein',
+                                 'N-glycan',
+                                 'DNA + RNA',
+                                 'Chromatin',
+                                 'Collagen',
+                                 'Fluorochrome',
+                                 'Lipid + metabolite',
+                                 'Peptide',
+                                 'Saturated lipid',
+                                 'Unsaturated lipid']
+
     if "analyte_class" not in adata.uns_keys():
         error_messages.append(
             ".uns must contain a key called 'analyte_class' that references a known analyte class defined in 'valid_analyte_classes.txt'."
