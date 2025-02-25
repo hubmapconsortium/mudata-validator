@@ -1,0 +1,17 @@
+DNA
+RNA
+Endogenous fluorophore
+Lipid
+Metabolite
+Polysaccharide
+Protein
+Nucleic acid + protein
+N-glycan
+DNA + RNA
+Chromatin
+Collagen
+Fluorochrome
+Lipid + metabolite
+Peptide
+Saturated lipid
+Unsaturated lipid
