@@ -2,10 +2,6 @@
 
 A Python package to validate mudata objects based on specific criteria for HuBMAP.
 
-## Requirements
-
-
-
 ## Installation
 
 Install the package:
