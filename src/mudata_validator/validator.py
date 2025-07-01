@@ -172,15 +172,16 @@ def validate_mudata(input_data):
 
     print("Validating overall MuData object...")
 
-    if mdata.uns.get("epic_type") == {"annotations"}:
+    epic_type = epic_type
+    if epic_type == {"annotations"}:
         for modality_name, adata in mdata.mod.items():
             validate_annotations(adata, modality_name, error_messages)
             validate_modality(adata, modality_name, error_messages)
-    elif mdata.uns.get("epic_type") == {"analyses"}:
+    elif epic_type == {"analyses"}:
         for modality_name, adata in mdata.mod.items():
             validate_analyses(adata, modality_name, error_messages)
             validate_modality(adata, modality_name, error_messages)
-    elif isinstance(mdata.uns.get("epic_type") (list, set, np.ndarray)) and {"annotations", "analyses"}.issubset(mdata.uns.get("epic_type")):
+    elif isinstance(epic_type, (list, set, np.ndarray)) and {"annotations", "analyses"}.issubset(epic_type):
         for modality_name, adata in mdata.mod.items():
             validate_analyses(adata, modality_name, error_messages)
             validate_annotations(adata, modality_name, error_messages)

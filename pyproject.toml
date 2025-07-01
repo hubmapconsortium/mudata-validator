@@ -1,6 +1,6 @@
 [project]
 name = "hubmap-mudata-validator"
-version = "1.0.2"
+version = "1.0.3"
 description = "A tool for validating MuData objects for HuBMAP EPICs."
 readme = "README.md"
 authors = [{name = "Penny Cuda", email = "pcuda@andrew.cmu.edu"}]

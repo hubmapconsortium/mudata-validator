@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="hubmap-mudata-validator",
-    version="1.0.1",
+    version="1.0.3",
     description="A package to validate MuData objects for HuBMAP EPICs.",
     long_description=long_description,
     long_description_content_type="text/markdown",
