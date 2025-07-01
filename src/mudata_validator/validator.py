@@ -172,7 +172,7 @@ def validate_mudata(input_data):
 
     print("Validating overall MuData object...")
 
-    epic_type = epic_type
+    epic_type =  mdata.uns.get("epic_type")
     if epic_type == {"annotations"}:
         for modality_name, adata in mdata.mod.items():
             validate_annotations(adata, modality_name, error_messages)

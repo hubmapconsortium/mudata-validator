@@ -6,7 +6,7 @@ A Python package to validate mudata objects based on specific criteria for HuBMA
 
 Install the package:
 ```bash
-pip install hubmap-mudata-validator==1.0.3
+pip install hubmap-mudata-validator==1.0.4
 ```
 
 Use the package:
