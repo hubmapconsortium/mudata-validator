@@ -180,7 +180,7 @@ def validate_mudata(input_data):
         for modality_name, adata in mdata.mod.items():
             validate_analyses(adata, modality_name, error_messages)
             validate_modality(adata, modality_name, error_messages)
-    elif mdata.uns.get("epic_type") == {"annotations", "analyses"}:
+    elif isinstance(mdata.uns.get("epic_type") (list, set, np.ndarray)) and {"annotations", "analyses"}.issubset(mdata.uns.get("epic_type")):
         for modality_name, adata in mdata.mod.items():
             validate_analyses(adata, modality_name, error_messages)
             validate_annotations(adata, modality_name, error_messages)
