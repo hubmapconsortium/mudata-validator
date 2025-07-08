@@ -1,6 +1,7 @@
 import os
 import warnings
 
+import anndata as ad
 import muon as mu
 import numpy as np
 import pandas as pd
@@ -36,7 +37,16 @@ def check_sparsity(matrix, matrix_name: str):
             )
 
 
-def validate_modality(adata, modality_name, error_messages):
+def validate_obsm_x_spatial(
+    matrix: np.ndarray, modality_name: str, error_messages: list
+):
+    if matrix.ndim < 2:
+        error_messages.append(
+            f"Only one dimension found in {modality_name}.obsm['X_spatial']; Expecting at least (y,x)."
+        )
+
+
+def validate_modality(adata: ad.AnnData, modality_name: str, error_messages: list):
     """Validate a single modality (AnnData object)."""
     print(f"Validating modality: {modality_name}")
 
@@ -77,30 +87,37 @@ def validate_modality(adata, modality_name, error_messages):
             f"`{modality_name}.uns` must contain a key 'protocol' with a valid Protocol DOI."
         )
 
-# Check analyte class
+    # Check analyte class
     try:
 
-        common_assay_fields = pd.read_csv("https://docs.google.com/spreadsheets/d/1oKBb0Elie4wNzjvqqQEVpH7I4-8phKyPn2oyvG3rNv4/export?gid=0&format=csv", header=1)
+        common_assay_fields = pd.read_csv(
+            "https://docs.google.com/spreadsheets/d/1oKBb0Elie4wNzjvqqQEVpH7I4-8phKyPn2oyvG3rNv4/export?gid=0&format=csv",
+            header=1,
+        )
         valid_analyte_classes = common_assay_fields["analyte class"].dropna().to_list()
     except Exception as e:
-        print(f"Error fetching Common Assay Fields data: {e}. Falling back to stored analyte classes.")
-        valid_analyte_classes = ['DNA',
-                                 'RNA',
-                                 'Endogenous fluorophore',
-                                 'Lipid',
-                                 'Metabolite',
-                                 'Polysaccharide',
-                                 'Protein',
-                                 'Nucleic acid + protein',
-                                 'N-glycan',
-                                 'DNA + RNA',
-                                 'Chromatin',
-                                 'Collagen',
-                                 'Fluorochrome',
-                                 'Lipid + metabolite',
-                                 'Peptide',
-                                 'Saturated lipid',
-                                 'Unsaturated lipid']
+        print(
+            f"Error fetching Common Assay Fields data: {e}. Falling back to stored analyte classes."
+        )
+        valid_analyte_classes = [
+            "DNA",
+            "RNA",
+            "Endogenous fluorophore",
+            "Lipid",
+            "Metabolite",
+            "Polysaccharide",
+            "Protein",
+            "Nucleic acid + protein",
+            "N-glycan",
+            "DNA + RNA",
+            "Chromatin",
+            "Collagen",
+            "Fluorochrome",
+            "Lipid + metabolite",
+            "Peptide",
+            "Saturated lipid",
+            "Unsaturated lipid",
+        ]
 
     if "analyte_class" not in adata.uns_keys():
         error_messages.append(
@@ -129,6 +146,9 @@ def validate_modality(adata, modality_name, error_messages):
         "Standard plots are expected to be stored in .obsm['X_umap'], .obsm['X_harmony'], .obsm['X_tsne'] and .obsm['X_pca']"
     )
     print("If this is spatial data, coordinates should go in .obsm['X_spatial']")
+
+    if "X_spatial" in adata.obsm_keys():
+        validate_obsm_x_spatial(adata.obsm["X_spatial"], modality_name, error_messages)
 
 
 def validate_annotations(adata, modality_name, error_messages):
@@ -172,7 +192,11 @@ def validate_mudata(input_data):
 
     print("Validating overall MuData object...")
 
-    epic_type =  mdata.uns.get("epic_type")
+    # Normalize epic_type to a set for reliable comparison
+    epic_type = mdata.uns.get("epic_type")
+    if isinstance(epic_type, (list, set, np.ndarray)):
+        epic_type = set(epic_type)
+
     if epic_type == {"annotations"}:
         for modality_name, adata in mdata.mod.items():
             validate_annotations(adata, modality_name, error_messages)
@@ -181,7 +205,7 @@ def validate_mudata(input_data):
         for modality_name, adata in mdata.mod.items():
             validate_analyses(adata, modality_name, error_messages)
             validate_modality(adata, modality_name, error_messages)
-    elif isinstance(epic_type, (list, set, np.ndarray)) and {"annotations", "analyses"}.issubset(epic_type):
+    elif isinstance(epic_type, set) and {"annotations", "analyses"}.issubset(epic_type):
         for modality_name, adata in mdata.mod.items():
             validate_analyses(adata, modality_name, error_messages)
             validate_annotations(adata, modality_name, error_messages)
