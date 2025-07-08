@@ -93,6 +93,33 @@ def test_dense_matrix_warns(create_mudata):
     ):
         validate_mudata(mdata)
 
+def test_annotation_obsm_pass(create_mudata):
+    """Presence of annotation matrix should not raise an error."""
+    mdata = create_mudata
+    mdata.mod["modality1"].obsm["annotation"] = np.array(
+        ['Immune', 'Immune', 'Immune']
+    )
+    mdata.mod["modality1"].uns['annotation_methods'] = 'manual'
+
+    try:
+        validate_mudata(mdata)
+    except ValueError as e:
+        pytest.fail(f"Unexpected ValueError: {e}")
+
+
+def test_annotation_raise_error(create_mudata):
+    """Presence of non-numerical matrix should not raise an error."""
+    mdata = create_mudata
+    mdata.mod["modality1"].obsm["annotation"] = np.array(
+        ['Immune', 'Immune', 'Immune']
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"`modality1.obsm\['annotation'\]` exists, but `modality1.uns\['annotation_methods'\]` is missing.",
+    ):
+        validate_mudata(mdata)
+
 
 def test_spatial_coords_pass(create_mudata):
     """Presence of X_spatial should not raise an error."""

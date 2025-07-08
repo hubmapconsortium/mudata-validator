@@ -29,6 +29,10 @@ def check_duplicate_objects(
 def check_sparsity(matrix, matrix_name: str):
     """Check the sparsity of a matrix and warn if it's too dense."""
     if isinstance(matrix, np.ndarray):
+        if matrix.ndim != 2:
+            return
+        if not np.issubdtype(matrix.dtype, np.number):
+            return
         sparsity = scipy.sparse.csr_matrix(matrix).nnz / np.prod(matrix.shape)
         if sparsity > 0.3:
             warnings.warn(
