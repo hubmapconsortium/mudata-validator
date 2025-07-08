@@ -49,8 +49,8 @@ def test_validate_mudata_valid(create_mudata):
         pytest.fail(f"Unexpected ValueError: {e}")
 
 
-def test_validate_mudata_missing_protocol_in_modality(create_mudata):
-    """Test that a modality without 'protocol' in .uns raises an error."""
+def test_missing_protocol_raises_error(create_mudata):
+    """Missing protocol in .uns should raise ValueError."""
     mdata = create_mudata
     del mdata.mod["modality1"].uns["protocol"]
 
@@ -61,10 +61,10 @@ def test_validate_mudata_missing_protocol_in_modality(create_mudata):
         validate_mudata(mdata)
 
 
-def test_validate_mudata_missing_original_obs_id(create_mudata):
-    """Test that a modality missing 'original_obs_id' in .obs raises an error."""
+def test_missing_original_obs_id_raises_error(create_mudata):
+    """Missing original_obs_id column in .obs should raise ValueError."""
     mdata = create_mudata
-    mdata.mod["modality2"].obs.drop(columns=["original_obs_id"], inplace=True)
+    mdata.mod["modality2"].obs = mdata.mod["modality2"].obs.drop(columns=["original_obs_id"])
 
     with pytest.raises(
         ValueError,
@@ -73,19 +73,19 @@ def test_validate_mudata_missing_original_obs_id(create_mudata):
         validate_mudata(mdata)
 
 
-def test_validate_mudata_duplicate_indices_in_modality(create_mudata):
-    """Test that duplicate indices in a modality's .obs raise an error."""
+def test_duplicate_indices_raise_error(create_mudata):
+    """Duplicate index values in .obs should raise ValueError."""
     mdata = create_mudata
-    mdata.mod["modality2"].obs.index = ["X", "X", "Z"]  # Duplicate index
+    mdata.mod["modality2"].obs.index = ["X", "X", "Z"]
 
     with pytest.raises(ValueError, match=r"Found duplicate object IDs in modality2"):
         validate_mudata(mdata)
 
 
-def test_validate_mudata_warn_on_dense_matrix(create_mudata):
-    """Test that a dense matrix in a modality issues a warning."""
+def test_dense_matrix_warns(create_mudata):
+    """Dense X should trigger a warning."""
     mdata = create_mudata
-    mdata.mod["modality1"].X = np.ones((3, 3))  # Replace with dense matrix
+    mdata.mod["modality1"].X = np.ones((3, 3))
 
     with pytest.warns(
         UserWarning,
@@ -94,8 +94,8 @@ def test_validate_mudata_warn_on_dense_matrix(create_mudata):
         validate_mudata(mdata)
 
 
-def test_validate_mudata_X_spatial(create_mudata):
-    """Test that a valid modality with X_spatial passes validation."""
+def test_spatial_coords_pass(create_mudata):
+    """Presence of X_spatial should not raise an error."""
     mdata = create_mudata
     mdata.mod["modality1"].obsm["X_spatial"] = np.array(
         [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]
@@ -107,9 +107,25 @@ def test_validate_mudata_X_spatial(create_mudata):
         pytest.fail(f"Unexpected ValueError: {e}")
 
 
-def test_validate_mudata_obj_types(create_mudata):
+def test_spatial_coords_raises_error(create_mudata):
+    """Only one dimension in X_Spatial should raise ValueError."""
+    mdata = create_mudata
+    mdata.mod["modality1"].obsm["X_spatial"] = np.array(
+        [0.1, 0.2, 0.3]
+    )
+    
+    with pytest.raises(
+        ValueError,
+        match=r"Only one dimension found in modality1.obsm\['X_spatial'\]; Expecting at least \(y,x\).",
+    ):
+        validate_mudata(mdata)
+
+
+def test_invalid_object_type_raises_error(create_mudata):
+    """Invalid value in object_type column should raise ValueError."""
     mdata = create_mudata
     mdata.mod["modality1"].obs["object_type"] = "invalid_value"
+
     with pytest.raises(
         ValueError,
         match=r"'modality1.obs\['object_type'\]' contains invalid values: invalid_value. Allowed values are: cell, nuclei, ftu, spot.",
@@ -117,9 +133,11 @@ def test_validate_mudata_obj_types(create_mudata):
         validate_mudata(mdata)
 
 
-def test_validate_mudata_epic_types(create_mudata):
+def test_missing_epic_type_raises_error(create_mudata):
+    """Missing 'epic_type' in mdata.uns should raise ValueError."""
     mdata = create_mudata
     del mdata.uns["epic_type"]
+
     with pytest.raises(
         ValueError,
         match=r"MuData.uns must contain a key called 'epic_type' with at least one valid epic type: annotations, analyses",
@@ -127,9 +145,11 @@ def test_validate_mudata_epic_types(create_mudata):
         validate_mudata(mdata)
 
 
-def test_validate_mudata_analyte_class(create_mudata):
+def test_invalid_analyte_class_raises_error(create_mudata):
+    """Invalid analyte_class should raise ValueError."""
     mdata = create_mudata
     mdata.mod["modality1"].uns["analyte_class"] = "invalid"
+
     with pytest.raises(
         ValueError,
         match=r"The value in .uns\['analyte_class'\] must reference a known analyte class defined in 'valid_analyte_classes.txt'.",
