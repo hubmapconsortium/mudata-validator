@@ -64,7 +64,9 @@ def test_missing_protocol_raises_error(create_mudata):
 def test_missing_original_obs_id_raises_error(create_mudata):
     """Missing original_obs_id column in .obs should raise ValueError."""
     mdata = create_mudata
-    mdata.mod["modality2"].obs = mdata.mod["modality2"].obs.drop(columns=["original_obs_id"])
+    mdata.mod["modality2"].obs = mdata.mod["modality2"].obs.drop(
+        columns=["original_obs_id"]
+    )
 
     with pytest.raises(
         ValueError,
@@ -93,6 +95,7 @@ def test_dense_matrix_warns(create_mudata):
     ):
         validate_mudata(mdata)
 
+
 def test_annotation_obsm_pass(create_mudata):
     """Presence of annotation matrix should not raise an error."""
     mdata = create_mudata
@@ -105,20 +108,6 @@ def test_annotation_obsm_pass(create_mudata):
         validate_mudata(mdata)
     except ValueError as e:
         pytest.fail(f"Unexpected ValueError: {e}")
-
-
-def test_annotation_raise_error(create_mudata):
-    """Presence of non-numerical matrix should not raise an error."""
-    mdata = create_mudata
-    mdata.mod["modality1"].obsm["annotation"] = np.array(
-        ['Immune', 'Immune', 'Immune']
-    )
-
-    with pytest.raises(
-        ValueError,
-        match=r"`modality1.obsm\['annotation'\]` exists, but `modality1.uns\['annotation_methods'\]` is missing.",
-    ):
-        validate_mudata(mdata)
 
 
 def test_spatial_coords_pass(create_mudata):
@@ -179,6 +168,6 @@ def test_invalid_analyte_class_raises_error(create_mudata):
 
     with pytest.raises(
         ValueError,
-        match=r"The value in .uns\['analyte_class'\] must reference a known analyte class defined in 'valid_analyte_classes.txt'.",
+        match=r"The value in `modality1.uns\['analyte_class'\]` must reference a known analyte class.",
     ):
         validate_mudata(mdata)

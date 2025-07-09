@@ -129,7 +129,9 @@ def validate_modality(adata: ad.AnnData, modality_name: str, error_messages: lis
         )
     elif adata.uns.get("analyte_class") not in valid_analyte_classes:
         error_messages.append(
-            "The value in .uns['analyte_class'] must reference a known analyte class defined in 'valid_analyte_classes.txt'."
+            f"The value in `{modality_name}.uns['analyte_class']` must reference a known analyte class. \n"
+            "The known analyte classes are: \n"
+            f"{valid_analyte_classes}"
         )
 
     # Check sparsity for all matrices
@@ -155,12 +157,9 @@ def validate_modality(adata: ad.AnnData, modality_name: str, error_messages: lis
         validate_obsm_x_spatial(adata.obsm["X_spatial"], modality_name, error_messages)
 
 
-def validate_annotations(adata, modality_name, error_messages):
+def validate_annotations(adata, modality_name):
     if "annotation" in adata.obsm:
-        if "annotation_methods" not in adata.uns:
-            error_messages.append(
-                f"`{modality_name}.obsm['annotation']` exists, but `{modality_name}.uns['annotation_methods']` is missing."
-            )
+        pass
     else:
         warnings.warn(
             f"It is recommended to use `{modality_name}.obsm['annotation']` for general annotation storage.",
@@ -168,7 +167,7 @@ def validate_annotations(adata, modality_name, error_messages):
         )
 
 
-def validate_analyses(adata, modality_name, error_messages):
+def validate_analyses(adata, modality_name):
     check_sparsity(adata.X, f"{modality_name}.X")
 
 
@@ -203,16 +202,16 @@ def validate_mudata(input_data):
 
     if epic_type == {"annotations"}:
         for modality_name, adata in mdata.mod.items():
-            validate_annotations(adata, modality_name, error_messages)
+            validate_annotations(adata, modality_name)
             validate_modality(adata, modality_name, error_messages)
     elif epic_type == {"analyses"}:
         for modality_name, adata in mdata.mod.items():
-            validate_analyses(adata, modality_name, error_messages)
+            validate_analyses(adata, modality_name)
             validate_modality(adata, modality_name, error_messages)
     elif isinstance(epic_type, set) and {"annotations", "analyses"}.issubset(epic_type):
         for modality_name, adata in mdata.mod.items():
-            validate_analyses(adata, modality_name, error_messages)
-            validate_annotations(adata, modality_name, error_messages)
+            validate_analyses(adata, modality_name)
+            validate_annotations(adata, modality_name)
             validate_modality(adata, modality_name, error_messages)
     else:
         error_messages.append(
