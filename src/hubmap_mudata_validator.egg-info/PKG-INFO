@@ -1,0 +1,39 @@
+Metadata-Version: 2.4
+Name: hubmap-mudata-validator
+Version: 1.0.7
+Summary: A tool for validating MuData objects for HuBMAP EPICs.
+Home-page: https://github.com/hubmapconsortium/mudata-validator
+Author: Penny Cuda
+Author-email: Penny Cuda <pcuda@andrew.cmu.edu>
+License: GNU General Public License v3 (GPLv3)
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: mudata>=0.2.3
+Requires-Dist: muon
+Dynamic: author
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-python
+
+# MuData Validator
+
+A Python package to validate mudata objects based on specific criteria for HuBMAP.
+
+## Installation
+
+Install the package:
+```bash
+pip install hubmap-mudata-validator
+```
+
+Use the package:
+```python
+from mudata_validator import validate_mudata
+validate_mudata(mudata_object)
+# OR
+validate_mudata(path_to_h5mu)
+```
