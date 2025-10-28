@@ -4,7 +4,10 @@ version = "1.0.7"
 description = "A tool for validating MuData objects for HuBMAP EPICs."
 readme = "README.md"
 authors = [{name = "Penny Cuda", email = "pcuda@andrew.cmu.edu"}]
-dependencies = ["muon"]
+dependencies = [
+    "mudata>=0.2.3",
+    "muon",
+]
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
