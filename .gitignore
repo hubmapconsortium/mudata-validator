@@ -4,3 +4,5 @@ hubmap_anndata_validator.egg-info/
 *.h5mu
 !example.h5mu
 /data
+uv.lock
+src/hubmap_mudata_validator.egg-info/
